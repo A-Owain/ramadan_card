@@ -5,157 +5,167 @@
 <title>Greeting Generator</title>
 
 <style>
-
 /* ===== LOAD CORPORATE FONTS ===== */
 @font-face{
-    font-family:"PingAR";
-    src:url("PingAR+LT-Medium.otf") format("opentype");
-    font-weight:500;
+  font-family:"PingAR";
+  src:url("PingAR+LT-Medium.otf") format("opentype");
+  font-weight:500;
 }
 @font-face{
-    font-family:"PingAR";
-    src:url("PingAR+LT-Heavy.otf") format("opentype");
-    font-weight:800;
+  font-family:"PingAR";
+  src:url("PingAR+LT-Heavy.otf") format("opentype");
+  font-weight:800;
 }
 
 /* ===== UI ===== */
-
 body{
-    font-family:"PingAR",system-ui;
-    background:#f6f8fb;
-    margin:0;
+  font-family:"PingAR",system-ui;
+  background:#f6f8fb;
+  margin:0;
 }
 
 .wrapper{
-    max-width:620px;
-    margin:60px auto;
-    background:white;
-    padding:40px;
-    border-radius:18px;
-    box-shadow:0 12px 40px rgba(0,0,0,.08);
+  max-width:620px;
+  margin:60px auto;
+  background:white;
+  padding:40px;
+  border-radius:18px;
+  box-shadow:0 12px 40px rgba(0,0,0,.08);
 }
 
 input{
-    width:100%;
-    padding:14px;
-    font-size:16px;
-    border-radius:10px;
-    border:1px solid #ddd;
-    margin-top:10px;
+  width:100%;
+  padding:14px;
+  font-size:16px;
+  border-radius:10px;
+  border:1px solid #ddd;
+  margin-top:10px;
 }
 
 input:focus{
-    outline:none;
-    border-color:#254488;
+  outline:none;
+  border-color:#254488;
 }
 
 button{
-    padding:12px 18px;
-    font-size:16px;
-    border-radius:10px;
-    border:none;
-    background:#254488;
-    color:white;
-    cursor:pointer;
-    margin-top:14px;
+  padding:12px 18px;
+  font-size:16px;
+  border-radius:10px;
+  border:none;
+  background:#254488;
+  color:white;
+  cursor:pointer;
+  margin-top:14px;
 }
 
 button:hover{opacity:.9;}
 
 canvas{
-    width:100%;
-    margin-top:25px;
-    border-radius:14px;
-    box-shadow:0 8px 25px rgba(0,0,0,.12);
+  width:100%;
+  margin-top:25px;
+  border-radius:14px;
+  box-shadow:0 8px 25px rgba(0,0,0,.12);
 }
-
 </style>
 </head>
 
 <body>
-
 <div class="wrapper">
+  <h2>Greeting Card Generator</h2>
 
-<h2>Greeting Card Generator</h2>
+  <input id="name" placeholder="Name | الاسم">
+  <input id="pos" placeholder="Position (optional)">
 
-<input id="name" placeholder="Name | الاسم">
-<input id="pos" placeholder="Position (optional)">
+  <button onclick="download()">Download</button>
 
-<button onclick="download()">Download</button>
-
-<canvas id="c" width="1080" height="1080"></canvas>
-
+  <!-- UPDATED: square canvas -->
+  <canvas id="c" width="1080" height="1080"></canvas>
 </div>
 
 <script>
-
-const canvas=document.getElementById("c");
-const ctx=canvas.getContext("2d");
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
 
 // ===== SETTINGS =====
-const IMAGE="ramadan_card.png";
+const IMAGE = "ramadan_card.png";
 
-const NAME_SIZE=34;
-const POS_SIZE=30;
+const NAME_SIZE = 36;        // tweak as needed
+const POS_SIZE  = 22;        // tweak as needed
+const LINE_GAP  = 16;        // gap between name and position
 
-const NAME_COLOR="#FFFFFF";
-const POSITION_COLOR="#f0c31b";
+const NAME_COLOR = "#FFFFFF";
+const POSITION_COLOR = "#f0c31b";
 
-const Y_WITH_POS=760;
-const Y_NO_POS=800;
-const POS_DY=44;
+const OPTICAL_SHIFT_Y = 310; // negative moves block slightly up (looks better on square cards)
 
 // ===== LOAD IMAGE =====
-let bg=new Image();
-bg.src=IMAGE;
+let bg = new Image();
+bg.src = IMAGE;
 
 function render(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
 
-    ctx.clearRect(0,0,810,1080);
-    ctx.drawImage(bg,0,0,1080,1080);
+  const name = document.getElementById("name").value.trim();
+  const pos  = document.getElementById("pos").value.trim();
+  if(!name) return;
 
-    let name=document.getElementById("name").value.trim();
-    let pos=document.getElementById("pos").value.trim();
+  ctx.textAlign = "center";
+  ctx.direction = "rtl";
 
-    if(!name) return;
+  // --- Measure block height (name + optional position) ---
+  const nameLineHeight = NAME_SIZE; // good approximation for canvas layout
+  const posLineHeight  = POS_SIZE;
 
-    ctx.textAlign="center";
-    ctx.direction="rtl";
+  const hasPos = !!pos;
+  const totalHeight = hasPos
+    ? (nameLineHeight + LINE_GAP + posLineHeight)
+    : nameLineHeight;
 
-    let y=pos ? Y_WITH_POS : Y_NO_POS;
+  // --- Compute vertically-centered baseline for the NAME line ---
+  // We place the block center at canvas center, then offset by half the block height.
+  const centerY = canvas.height / 2 + OPTICAL_SHIFT_Y;
+  
+  const topY = centerY - (totalHeight / 2);
 
-    // NAME
-    ctx.fillStyle=NAME_COLOR;
-    ctx.font='800 '+NAME_SIZE+'px "PingAR"';
-    ctx.fillText(name,405,y);
+  // Baseline adjustment: add font size to approximate baseline position
+  const nameY = topY + NAME_SIZE;
 
-    // POSITION (different color)
-    if(pos){
-        ctx.fillStyle=POSITION_COLOR;
-        ctx.font='500 '+POS_SIZE+'px "PingAR"';
-        ctx.fillText(pos,405,y+POS_DY);
-    }
+  // --- Draw NAME ---
+  ctx.fillStyle = NAME_COLOR;
+  ctx.font = `800 ${NAME_SIZE}px "PingAR"`;
+  ctx.fillText(name, canvas.width/2, nameY);
+
+  // --- Draw POSITION ---
+  if(hasPos){
+    const posY = nameY + LINE_GAP + POS_SIZE;
+    ctx.fillStyle = POSITION_COLOR;
+    ctx.font = `500 ${POS_SIZE}px "PingAR"`;
+    ctx.fillText(pos, canvas.width/2, posY);
+  }
 }
 
 function download(){
-    render();
-    let a=document.createElement("a");
-    a.download="greeting.png";
-    a.href=canvas.toDataURL("image/png");
-    a.click();
+  render();
+  const name = (document.getElementById("name").value || "greeting")
+    .trim()
+    .replace(/[^\w\u0600-\u06FF-]+/g, "_");
+
+  const a = document.createElement("a");
+  a.download = `greeting_${name}.png`;
+  a.href = canvas.toDataURL("image/png");
+  a.click();
 }
 
 // WAIT FOR FONTS + IMAGE
 Promise.all([
-    document.fonts.ready,
-    new Promise(res=>bg.onload=res)
-]).then(()=>render());
+  document.fonts.ready,
+  new Promise(res => bg.onload = res)
+]).then(() => render());
 
 // LIVE PREVIEW
-document.getElementById("name").oninput=render;
-document.getElementById("pos").oninput=render;
-
+document.getElementById("name").addEventListener("input", render);
+document.getElementById("pos").addEventListener("input", render);
 </script>
-
 </body>
 </html>
