@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Greeting Generator</title>
+
+<style>
+
+/* ===== LOAD CORPORATE FONTS ===== */
+@font-face{
+    font-family:"PingAR";
+    src:url("PingAR+LT-Medium.otf") format("opentype");
+    font-weight:500;
+}
+@font-face{
+    font-family:"PingAR";
+    src:url("PingAR+LT-Heavy.otf") format("opentype");
+    font-weight:800;
+}
+
+/* ===== UI ===== */
+
+body{
+    font-family:"PingAR",system-ui;
+    background:#f6f8fb;
+    margin:0;
+}
+
+.wrapper{
+    max-width:620px;
+    margin:60px auto;
+    background:white;
+    padding:40px;
+    border-radius:18px;
+    box-shadow:0 12px 40px rgba(0,0,0,.08);
+}
+
+input{
+    width:100%;
+    padding:14px;
+    font-size:16px;
+    border-radius:10px;
+    border:1px solid #ddd;
+    margin-top:10px;
+}
+
+input:focus{
+    outline:none;
+    border-color:#254488;
+}
+
+button{
+    padding:12px 18px;
+    font-size:16px;
+    border-radius:10px;
+    border:none;
+    background:#254488;
+    color:white;
+    cursor:pointer;
+    margin-top:14px;
+}
+
+button:hover{opacity:.9;}
+
+canvas{
+    width:100%;
+    margin-top:25px;
+    border-radius:14px;
+    box-shadow:0 8px 25px rgba(0,0,0,.12);
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<h2>Greeting Card Generator</h2>
+
+<input id="name" placeholder="Name | الاسم">
+<input id="pos" placeholder="Position (optional)">
+
+<button onclick="download()">Download</button>
+
+<canvas id="c" width="810" height="1080"></canvas>
+
+</div>
+
+<script>
+
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d");
+
+// ===== SETTINGS =====
+const IMAGE="ramadan_card.png";
+
+const NAME_SIZE=34;
+const POS_SIZE=30;
+
+const NAME_COLOR="#FFFFFF";
+const POSITION_COLOR="#f0c31b";
+
+const Y_WITH_POS=840;
+const Y_NO_POS=840;
+const POS_DY=44;
+
+// ===== LOAD IMAGE =====
+let bg=new Image();
+bg.src=IMAGE;
+
+function render(){
+
+    ctx.clearRect(0,0,810,1080);
+    ctx.drawImage(bg,0,0,810,1080);
+
+    let name=document.getElementById("name").value.trim();
+    let pos=document.getElementById("pos").value.trim();
+
+    if(!name) return;
+
+    ctx.textAlign="center";
+    ctx.direction="rtl";
+
+    let y=pos ? Y_WITH_POS : Y_NO_POS;
+
+    // NAME
+    ctx.fillStyle=NAME_COLOR;
+    ctx.font='800 '+NAME_SIZE+'px "PingAR"';
+    ctx.fillText(name,405,y);
+
+    // POSITION (different color)
+    if(pos){
+        ctx.fillStyle=POSITION_COLOR;
+        ctx.font='500 '+POS_SIZE+'px "PingAR"';
+        ctx.fillText(pos,405,y+POS_DY);
+    }
+}
+
+function download(){
+    render();
+    let a=document.createElement("a");
+    a.download="greeting.png";
+    a.href=canvas.toDataURL("image/png");
+    a.click();
+}
+
+// WAIT FOR FONTS + IMAGE
+Promise.all([
+    document.fonts.ready,
+    new Promise(res=>bg.onload=res)
+]).then(()=>render());
+
+// LIVE PREVIEW
+document.getElementById("name").oninput=render;
+document.getElementById("pos").oninput=render;
+
+</script>
+
+</body>
+</html>
